@@ -289,15 +289,22 @@ section { padding: var(--space-xl) 0; }
 }
 
 /* ---------- ループ横スクロール帯（おすすめツアー） ---------- */
-/* 回転寿司のレーンのように、止まらずにずっと流れ続ける帯。
-   スクロールバー等の手動操作は出さず、写真はクリックでそのまま選べる。 */
+/* 回転寿司のレーンのように、ふだんは自動でずっと流れ続ける帯。
+   ただし、指やマウスで触れたときは手で横に送れるようにする（スクロールバーは出さない）。 */
 .loop-strip {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   padding: var(--space-lg) 0;
   background: var(--blue-pale-75);
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 60px, #000 calc(100% - 60px), transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0, #000 60px, #000 calc(100% - 60px), transparent 100%);
 }
+
+.loop-strip::-webkit-scrollbar { display: none; }
 
 .loop-track {
   display: flex;
@@ -351,14 +358,10 @@ section { padding: var(--space-xl) 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* 動きを止める設定の方には、自動では流さず手で送れるようにする */
+  /* 動きを止める設定の方には、自動では流さず、手で送ったときにスナップするようにする */
   .loop-strip {
-    overflow-x: auto;
     scroll-snap-type: x proximity;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
   }
-  .loop-strip::-webkit-scrollbar { display: none; }
   .loop-item { scroll-snap-align: start; }
 }
 
