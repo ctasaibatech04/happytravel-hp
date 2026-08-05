@@ -629,6 +629,223 @@ textarea:focus {
 
 textarea { min-height: 140px; resize: vertical; }
 
+/* ---------- ご予約・ご相談フォーム ---------- */
+.reserve-form .field { margin-bottom: var(--space-sm); }
+
+.reserve-form .field label {
+  margin-bottom: 0.4rem;
+  line-height: 1.6;
+}
+
+.reserve-form .required {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.6rem;
+  border-radius: 999px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: 0.15em;
+}
+
+.reserve-form input[type="text"],
+.reserve-form input[type="tel"],
+.reserve-form select,
+.reserve-form textarea {
+  width: 100%;
+  font-family: var(--font-base);
+  font-size: 1.05rem;
+  padding: 0.9rem 1rem;
+  border: 2px solid var(--blue-pale);
+  border-radius: 12px;
+  margin-bottom: 0;
+  color: var(--text-main);
+  background: #FBFEFF;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.reserve-form select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.4rem;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231B6E96' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+
+.reserve-form textarea { min-height: 120px; }
+
+.reserve-form input:focus,
+.reserve-form select:focus,
+.reserve-form textarea:focus {
+  outline: none;
+  border-color: var(--blue-light);
+  background: var(--white);
+}
+
+.reserve-form .date-select-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reserve-form .date-select-row select {
+  width: auto;
+  flex: 1 1 84px;
+  min-width: 76px;
+  padding-left: 0.7rem;
+  padding-right: 1.9rem;
+  background-position: right 0.5rem center;
+}
+
+.reserve-form .date-select-unit {
+  color: var(--text-sub);
+  font-size: 0.95rem;
+  margin-right: 0.2rem;
+}
+
+.reserve-form .error-msg {
+  display: none;
+  margin: 0.4rem 0 0;
+  font-size: 0.9rem;
+  color: #C1553F;
+}
+
+.reserve-form .field.has-error input,
+.reserve-form .field.has-error select,
+.reserve-form .field.has-error textarea {
+  border-color: #C1553F;
+  background: #FDF3F0;
+}
+
+.reserve-form .field.has-error .error-msg { display: block; }
+
+.reserve-form .btn { margin-top: var(--space-xs); }
+
+.form-note-small {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  margin: var(--space-xs) 0 0;
+}
+
+/* 入力内容のまとめ（確認モーダル・完了表示で共用） */
+.summary {
+  background: var(--blue-pale);
+  border-radius: 14px;
+  padding: var(--space-sm);
+  text-align: left;
+  margin-bottom: var(--space-sm);
+}
+
+.summary dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 7.5em 1fr;
+  row-gap: 0.6rem;
+  column-gap: 0.6rem;
+}
+
+.summary dt {
+  font-weight: 700;
+  color: var(--blue-deep);
+  font-size: 0.95rem;
+}
+
+.summary dd {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-main);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 400px) {
+  .summary dl { grid-template-columns: 1fr; row-gap: 0.2rem; }
+  .summary dd { margin-bottom: 0.5rem; }
+}
+
+/* 送信完了の表示 */
+.result-card { display: none; text-align: center; }
+.result-card.show { display: block; }
+
+.result-card h3 {
+  color: var(--blue-deep);
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+}
+
+.result-card .result-sub {
+  color: var(--text-sub);
+  font-size: 1rem;
+  margin: 0 0 var(--space-sm);
+}
+
+.result-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--blue-mid);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.9rem;
+  font-weight: 700;
+  margin: 0 auto var(--space-xs);
+}
+
+/* 送信前の確認モーダル */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(22, 74, 102, 0.5);
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-sm);
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 44px rgba(22, 74, 102, 0.32);
+  padding: var(--space-md);
+  width: 100%;
+  max-width: 480px;
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+.modal-card h3 {
+  margin: 0 0 0.3rem;
+  color: var(--blue-deep);
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+.modal-card .modal-sub {
+  text-align: center;
+  color: var(--text-sub);
+  font-size: 0.95rem;
+  margin: 0 0 var(--space-sm);
+}
+
+.modal-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.modal-btns .btn { width: 100%; text-align: center; }
+
 .phone-highlight {
   background: var(--blue-deep);
   color: var(--white);
