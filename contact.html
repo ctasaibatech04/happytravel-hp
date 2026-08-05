@@ -70,26 +70,95 @@
 
     <div class="fade-in">
       <div class="form-card">
-        <h3 style="margin-top:0; color:var(--blue-deep);">フォームでのご相談</h3>
-        <p style="color:var(--text-sub); margin-top:-0.5rem;">お電話番号とご相談内容をご記入ください。折り返しご連絡いたします。</p>
+        <h3 style="margin-top:0; color:var(--blue-deep);">フォームでのご相談・ご予約</h3>
+        <p style="color:var(--text-sub); margin-top:-0.5rem;">下の項目をご記入ください。折り返し担当よりご連絡いたします。</p>
 
-        <form id="contact-form">
-          <label for="tel">お電話番号</label>
-          <input type="tel" id="tel" name="tel" placeholder="090-1234-5678" required>
+        <form class="reserve-form" id="reserveForm" novalidate>
 
-          <label for="message">相談内容</label>
-          <textarea id="message" name="message" placeholder="気になるツアー名や、ご希望の行き先・時期などをご記入ください。" required></textarea>
+          <div class="field" id="field-name">
+            <label for="name">お名前（苗字のみで結構です）<span class="required">必須</span></label>
+            <input type="text" id="name" name="name" placeholder="例）山田" autocomplete="family-name">
+            <p class="error-msg">お名前をご入力ください。</p>
+          </div>
 
-          <button type="submit" class="btn btn-primary" style="width:100%;">この内容で相談する</button>
+          <div class="field" id="field-phone">
+            <label for="phone">お電話番号<span class="required">必須</span></label>
+            <input type="tel" id="phone" name="phone" placeholder="例）090-1234-5678" autocomplete="tel">
+            <p class="error-msg">お電話番号をご入力ください。</p>
+          </div>
+
+          <div class="field" id="field-people">
+            <label for="people">ご相談人数<span class="required">必須</span></label>
+            <select id="people" name="people">
+              <option value="">選択してください</option>
+            </select>
+            <p class="error-msg">人数を選択してください。</p>
+          </div>
+
+          <div class="field" id="field-plan">
+            <label for="plan">ご相談の旅行プラン<span class="required">必須</span></label>
+            <select id="plan" name="plan">
+              <option value="">選択してください</option>
+              <option value="ご家族向けツアー">ご家族向けツアー</option>
+              <option value="ご年配向けツアー">ご年配向けツアー</option>
+              <option value="海外旅行">海外旅行</option>
+              <option value="国内旅行">国内旅行</option>
+              <option value="割安航空券">割安航空券</option>
+              <option value="その他のご相談">その他のご相談</option>
+            </select>
+            <p class="error-msg">プランを選択してください。</p>
+          </div>
+
+          <div class="field" id="field-date">
+            <label for="date-year">ご希望日<span class="required">必須</span></label>
+            <div class="date-select-row">
+              <select id="date-year" name="date-year" aria-label="年"></select>
+              <span class="date-select-unit">年</span>
+              <select id="date-month" name="date-month" aria-label="月"></select>
+              <span class="date-select-unit">月</span>
+              <select id="date-day" name="date-day" aria-label="日"></select>
+              <span class="date-select-unit">日</span>
+            </div>
+            <p class="error-msg">本日以降の日にちを選択してください。</p>
+          </div>
+
+          <div class="field" id="field-message">
+            <label for="message">ご相談内容（任意）</label>
+            <textarea id="message" name="message" placeholder="気になるツアー名や、ご希望の行き先・時期などをご記入ください。"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;">この内容で予約する</button>
+          <p class="form-note-small">送信後、担当より折り返しご連絡いたします。</p>
         </form>
-        <p id="form-note" style="display:none; margin-top: var(--space-sm); color: var(--blue-mid);">
-          ご記入ありがとうございます。担当より折り返しご連絡いたします。
-        </p>
+
+        <div class="result-card" id="resultCard">
+          <div class="result-icon">✓</div>
+          <h3>ご予約を受け付けました</h3>
+          <p class="result-sub">お問い合わせいただき、ありがとうございます。担当より折り返しご連絡いたします。</p>
+          <div class="summary">
+            <dl id="summaryList"></dl>
+          </div>
+          <button type="button" class="btn btn-secondary" id="backBtn">別の予約を入力する</button>
+        </div>
       </div>
     </div>
 
   </div>
 </section>
+
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-card">
+    <h3 id="modalTitle">入力内容に間違いはありませんか？</h3>
+    <p class="modal-sub">内容をご確認のうえ、よろしければ送信してください。</p>
+    <div class="summary">
+      <dl id="modalSummaryList"></dl>
+    </div>
+    <div class="modal-btns">
+      <button type="button" class="btn btn-primary" id="modalConfirmBtn">この内容で送信する</button>
+      <button type="button" class="btn btn-secondary" id="modalEditBtn">修正する</button>
+    </div>
+  </div>
+</div>
 
 <footer class="site-footer">
   <div class="container">
@@ -123,22 +192,183 @@
 
 <script src="js/main.js"></script>
 <script>
-  // URLの ?tour= からツアー名を受け取り、相談内容にあらかじめ入れておく
-  (function () {
-    var params = new URLSearchParams(window.location.search);
-    var tour = params.get('tour');
-    if (tour) {
-      var textarea = document.getElementById('message');
-      textarea.value = '【' + decodeURIComponent(tour) + '】について相談したいです。\n';
-    }
-  })();
+(function () {
+  // ---- URLの ?tour= からツアー名を受け取り、ご相談内容にあらかじめ入れておく ----
+  var params = new URLSearchParams(window.location.search);
+  var tour = params.get('tour');
+  if (tour) {
+    document.getElementById('message').value =
+      '【' + decodeURIComponent(tour) + '】について相談したいです。\n';
+  }
 
-  // デモ用の送信動作(実際の送信先は未設定)
-  document.getElementById('contact-form').addEventListener('submit', function (e) {
+  // ---- 人数 1〜12 のプルダウンを生成 ----
+  var peopleSelect = document.getElementById('people');
+  for (var i = 1; i <= 12; i++) {
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = i + '名';
+    peopleSelect.appendChild(opt);
+  }
+
+  // ---- ご希望日（年・月・日）のプルダウンを生成 ----
+  var yearSelect = document.getElementById('date-year');
+  var monthSelect = document.getElementById('date-month');
+  var daySelect = document.getElementById('date-day');
+  var today = new Date();
+  var thisYear = today.getFullYear();
+
+  var yearBlank = document.createElement('option');
+  yearBlank.value = ''; yearBlank.textContent = '年';
+  yearSelect.appendChild(yearBlank);
+  for (var y = thisYear; y <= thisYear + 2; y++) {
+    var yOpt = document.createElement('option');
+    yOpt.value = y; yOpt.textContent = y;
+    yearSelect.appendChild(yOpt);
+  }
+
+  var monthBlank = document.createElement('option');
+  monthBlank.value = ''; monthBlank.textContent = '月';
+  monthSelect.appendChild(monthBlank);
+  for (var m = 1; m <= 12; m++) {
+    var mOpt = document.createElement('option');
+    mOpt.value = m; mOpt.textContent = m;
+    monthSelect.appendChild(mOpt);
+  }
+
+  var dayBlank = document.createElement('option');
+  dayBlank.value = ''; dayBlank.textContent = '日';
+  daySelect.appendChild(dayBlank);
+
+  // 選ばれた年・月に合わせて「日」の選択肢を作り直す（2月31日などが選べないように）
+  function refreshDayOptions() {
+    var keepValue = daySelect.value;
+    var yy = parseInt(yearSelect.value, 10);
+    var mm = parseInt(monthSelect.value, 10);
+    var daysInMonth = (yy && mm) ? new Date(yy, mm, 0).getDate() : 31;
+
+    daySelect.innerHTML = '';
+    daySelect.appendChild(dayBlank.cloneNode(true));
+    for (var d = 1; d <= daysInMonth; d++) {
+      var dOpt = document.createElement('option');
+      dOpt.value = d; dOpt.textContent = d;
+      daySelect.appendChild(dOpt);
+    }
+    if (keepValue && parseInt(keepValue, 10) <= daysInMonth) {
+      daySelect.value = keepValue;
+    }
+  }
+  refreshDayOptions();
+  yearSelect.addEventListener('change', refreshDayOptions);
+  monthSelect.addEventListener('change', refreshDayOptions);
+
+  // ---- 送信・確認モーダル・完了表示 ----
+  var form = document.getElementById('reserveForm');
+  var resultCard = document.getElementById('resultCard');
+  var summaryList = document.getElementById('summaryList');
+  var backBtn = document.getElementById('backBtn');
+  var modalOverlay = document.getElementById('modalOverlay');
+  var modalSummaryList = document.getElementById('modalSummaryList');
+  var modalConfirmBtn = document.getElementById('modalConfirmBtn');
+  var modalEditBtn = document.getElementById('modalEditBtn');
+  var pendingRows = null;
+
+  function setError(fieldId, hasError) {
+    document.getElementById(fieldId).classList.toggle('has-error', hasError);
+  }
+
+  function fillSummary(listEl, rows) {
+    listEl.innerHTML = '';
+    rows.forEach(function (row) {
+      var dt = document.createElement('dt');
+      dt.textContent = row[0];
+      var dd = document.createElement('dd');
+      dd.textContent = row[1];
+      listEl.appendChild(dt);
+      listEl.appendChild(dd);
+    });
+  }
+
+  function closeModal() {
+    modalOverlay.classList.remove('show');
+  }
+
+  form.addEventListener('submit', function (e) {
     e.preventDefault();
-    document.getElementById('form-note').style.display = 'block';
-    // ※このフォームはまだ送信先(メール等)が設定されていません。実際の送信処理は別途実装が必要です。
+
+    var name = document.getElementById('name').value.trim();
+    var phone = document.getElementById('phone').value.trim();
+    var people = peopleSelect.value;
+    var plan = document.getElementById('plan').value;
+    var yv = yearSelect.value;
+    var mv = monthSelect.value;
+    var dv = daySelect.value;
+    var message = document.getElementById('message').value.trim();
+
+    var valid = true;
+    setError('field-name', !name); if (!name) valid = false;
+    setError('field-phone', !phone); if (!phone) valid = false;
+    setError('field-people', !people); if (!people) valid = false;
+    setError('field-plan', !plan); if (!plan) valid = false;
+
+    var dateOk = !!(yv && mv && dv);
+    if (dateOk) {
+      var selected = new Date(parseInt(yv, 10), parseInt(mv, 10) - 1, parseInt(dv, 10));
+      var todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (selected < todayOnly) dateOk = false;
+    }
+    setError('field-date', !dateOk); if (!dateOk) valid = false;
+
+    if (!valid) {
+      var firstError = form.querySelector('.has-error');
+      if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    pendingRows = [
+      ['お名前', name + ' 様'],
+      ['お電話番号', phone],
+      ['ご相談人数', people + '名'],
+      ['旅行プラン', plan],
+      ['ご希望日', yv + '年' + mv + '月' + dv + '日'],
+      ['ご相談内容', message ? message : '（記入なし）']
+    ];
+
+    fillSummary(modalSummaryList, pendingRows);
+    modalOverlay.classList.add('show');
+    modalConfirmBtn.focus();
   });
+
+  modalEditBtn.addEventListener('click', closeModal);
+
+  modalOverlay.addEventListener('click', function (e) {
+    if (e.target === modalOverlay) closeModal();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('show')) closeModal();
+  });
+
+  // ※このフォームはまだ送信先(メール等)が設定されていません。実際の送信処理は別途実装が必要です。
+  modalConfirmBtn.addEventListener('click', function () {
+    if (!pendingRows) return;
+    fillSummary(summaryList, pendingRows);
+    closeModal();
+    form.style.display = 'none';
+    resultCard.classList.add('show');
+    resultCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  backBtn.addEventListener('click', function () {
+    form.reset();
+    form.querySelectorAll('.field.has-error').forEach(function (f) {
+      f.classList.remove('has-error');
+    });
+    refreshDayOptions();
+    resultCard.classList.remove('show');
+    form.style.display = 'block';
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+})();
 </script>
 </body>
 </html>
