@@ -187,8 +187,9 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // ---------- ループ横スクロール帯 ----------
-  // 回転寿司のレーンのように、止まらずにずっと流れ続ける。
-  // カーソルが乗っても止めず、流れているところをそのままクリックして選べるようにする。
+  // ふだんは回転寿司のレーンのように、止まらずにずっと流れ続ける。
+  // カーソルが乗っても止めないが、指やマウスで触れて手で送っているあいだは
+  // 自動で流すのをいったん止めて、ユーザーの操作を優先する。
   document.querySelectorAll('.loop-strip').forEach(function (strip) {
     var track = strip.querySelector('.loop-track');
     if (!track) return;
@@ -196,6 +197,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var speed = 40; // 1秒あたりに自動で流れるピクセル数
     var half = 0;
     var lastTime = null;
+    var isInteracting = false;
+    var resumeTimer = null;
 
     function measure() {
       // 複製した後半分ぶんの位置で、そっと先頭へ折り返す
@@ -213,15 +216,42 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
+    function pause() {
+      isInteracting = true;
+      lastTime = null;
+      if (resumeTimer) {
+        clearTimeout(resumeTimer);
+        resumeTimer = null;
+      }
+    }
+
+    function resume() {
+      // 手を離してすぐには動かさず、少し間を置いてから自動で流れるのを再開する
+      if (resumeTimer) clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(function () {
+        isInteracting = false;
+        lastTime = null;
+      }, 1200);
+    }
+
+    // タッチ・マウスどちらも pointer イベントでまとめて拾う
+    strip.addEventListener('pointerdown', pause, { passive: true });
+    strip.addEventListener('pointerup', resume, { passive: true });
+    strip.addEventListener('pointercancel', resume, { passive: true });
+    strip.addEventListener('pointerleave', resume, { passive: true });
+    // 指を離したあとの慣性スクロール中も折り返しだけは効かせておく
+    strip.addEventListener('scroll', wrap, { passive: true });
+
     function tick(time) {
-      if (!prefersReduced) {
+      // 手で触れているあいだは自動で流すのを止め、折り返しだけは常に効かせておく
+      if (!prefersReduced && !isInteracting) {
         if (lastTime !== null) {
           var dt = (time - lastTime) / 1000;
           strip.scrollLeft += speed * dt;
-          wrap();
         }
         lastTime = time;
       }
+      wrap();
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);

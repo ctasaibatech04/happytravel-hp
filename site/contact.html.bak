@@ -30,7 +30,7 @@
   </div>
 </header>
 
-<section class="hero" style="min-height:34vh; background-image:url('image3.png');">
+<section class="hero" style="min-height:34vh; background-image:url('image3.jpg');">
   <div class="container">
     <h1>ご相談・お問い合わせ</h1>
     <p>お電話でも、フォームからでも大丈夫です。お気軽にご連絡ください。</p>
@@ -60,7 +60,7 @@
       </div>
 
       <div id="flight" class="note-box flight-card" style="margin-top: var(--space-md);">
-        <img src="image3.png" alt="海外旅行のイメージ（夕景の街並み）">
+        <img src="image3.jpg" alt="海外旅行のイメージ（夕景の街並み）">
         <div>
           <strong>割安航空券をお探しの方へ</strong><br>
           航空券のみのご相談も承っております。ご希望の行き先・時期を「相談内容」にご記入いただくか、お電話にてお気軽にお問い合わせください。
