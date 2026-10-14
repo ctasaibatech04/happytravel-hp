@@ -9,6 +9,9 @@ const { registerAdmin } = require('./admin');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Vercel などのプロキシ越しでも https 判定やアクセス元IPを正しく取れるようにする
+app.set('trust proxy', 1);
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -81,6 +84,11 @@ app.post('/api/reserve', async (req, res) => {
 
 registerAdmin(app, supabase);
 
-app.listen(PORT, () => {
-  console.log('サーバーを起動しました：http://localhost:' + PORT);
-});
+// npm start で直接起動したときだけサーバーを立ち上げる（Vercel では api/index.js から app を読み込んで使う）
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log('サーバーを起動しました：http://localhost:' + PORT);
+  });
+}
+
+module.exports = app;

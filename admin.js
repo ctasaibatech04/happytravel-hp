@@ -1,25 +1,117 @@
 // お店の人向け：予約一覧ページ（/admin）
 // happytravel_reservations の予約を新しい順に表示し、状態の変更と予約内容の編集ができる
+// tencho / staff のIDでログインした人だけが使える
 
-// お客様の個人情報を出すページなので、
-// .env に ADMIN_PASSWORD があればパスワード（ユーザー名は admin）を求め、
-// 無ければこのパソコン自身（localhost）からのアクセスだけを許可する
+const crypto = require('crypto');
+const express = require('express');
+
+// お客様の個人情報を出すページなので、ログインした人だけが使えるようにする。
+// ID と パスワード（.env）の組み合わせ。canEdit が無い人は一覧を見るだけ
+const USERS = {
+  tencho: { label: '店長', passwordEnv: 'TENCHO_PASSWORD', canEdit: true },
+  staff: { label: 'スタッフ', passwordEnv: 'STAFF_PASSWORD', canEdit: false }
+};
+
+function canEdit(userId) {
+  return Boolean(USERS[userId]?.canEdit);
+}
+
+const SESSION_COOKIE = 'ht_admin';
+const SESSION_HOURS = 12;
+// ログイン情報の改ざんを防ぐための鍵。Vercel ではサーバーが何度も作り直されるので、
+// 毎回ランダムに作るとすぐログインが切れてしまう。.env の SESSION_SECRET（無ければパスワードから作る）で固定する。
+// パスワードを変えると鍵も変わり、それまでのログインは無効になる
+const SESSION_SECRET = process.env.SESSION_SECRET
+  || crypto.createHash('sha256')
+    .update(`happytravel-admin:${process.env.TENCHO_PASSWORD || ''}:${process.env.STAFF_PASSWORD || ''}`)
+    .digest();
+
+function sign(value) {
+  return crypto.createHmac('sha256', SESSION_SECRET).update(value).digest('base64url');
+}
+
+function safeEqual(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a)).digest();
+  const hb = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+function checkLogin(id, password) {
+  const user = Object.hasOwn(USERS, id) ? USERS[id] : null;
+  const expected = user && process.env[user.passwordEnv];
+  // パスワードが .env に無いIDではログインできない
+  return Boolean(expected) && safeEqual(password, expected);
+}
+
+function readCookie(req, name) {
+  for (const part of (req.headers.cookie || '').split(';')) {
+    const [key, ...rest] = part.trim().split('=');
+    if (key === name) return decodeURIComponent(rest.join('='));
+  }
+  return null;
+}
+
+// Cookie の中身は「ID.有効期限.署名」
+function getLoginUser(req) {
+  const token = readCookie(req, SESSION_COOKIE);
+  if (!token) return null;
+  const [id, expires, signature] = token.split('.');
+  if (!id || !expires || !signature) return null;
+  if (!safeEqual(signature, sign(`${id}.${expires}`))) return null;
+  if (Number(expires) < Date.now() || !Object.hasOwn(USERS, id)) return null;
+  return id;
+}
+
+function setLoginCookie(req, res, id) {
+  const expires = Date.now() + SESSION_HOURS * 60 * 60 * 1000;
+  const value = `${id}.${expires}`;
+  res.cookie(SESSION_COOKIE, `${value}.${sign(value)}`, {
+    httpOnly: true, sameSite: 'lax', secure: req.secure, path: '/admin',
+    maxAge: SESSION_HOURS * 60 * 60 * 1000
+  });
+}
+
+// パスワードの総当たりを防ぐため、同じ所から15分に10回まちがえたらしばらく受け付けない
+const LOGIN_LIMIT = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const loginFailures = new Map();
+
+function isLockedOut(ip) {
+  const entry = loginFailures.get(ip);
+  if (!entry) return false;
+  if (Date.now() - entry.since > LOGIN_WINDOW_MS) {
+    loginFailures.delete(ip);
+    return false;
+  }
+  return entry.count >= LOGIN_LIMIT;
+}
+
+function recordFailure(ip) {
+  const entry = loginFailures.get(ip);
+  if (!entry || Date.now() - entry.since > LOGIN_WINDOW_MS) {
+    loginFailures.set(ip, { count: 1, since: Date.now() });
+  } else {
+    entry.count += 1;
+  }
+}
+
+// ログインしていなければ、画面はログインページへ、裏の通信は 401 を返す
 function requireAdmin(req, res, next) {
-  const password = process.env.ADMIN_PASSWORD;
-
-  if (!password) {
-    const ip = req.socket.remoteAddress || '';
-    if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return next();
-    return res.status(403).send('このページはお店のパソコンからのみ開けます。');
+  const id = getLoginUser(req);
+  if (id) {
+    req.adminUser = id;
+    return next();
   }
-
-  const [scheme, encoded] = (req.headers.authorization || '').split(' ');
-  if (scheme === 'Basic' && encoded) {
-    const [user, pass] = Buffer.from(encoded, 'base64').toString().split(/:(.*)/s);
-    if (user === 'admin' && pass === password) return next();
+  if (req.method === 'GET' && req.path === '/admin') {
+    return res.redirect('/admin/login');
   }
-  res.set('WWW-Authenticate', 'Basic realm="HappyTravel Admin", charset="UTF-8"');
-  res.status(401).send('パスワードが必要です。');
+  res.status(401).json({ ok: false, error: 'ログインの有効期限が切れました。もう一度ログインしてください。', login: true });
+}
+
+// 状態の変更や予約の編集は、canEdit のある人（店長）だけ
+function requireEditor(req, res, next) {
+  if (canEdit(req.adminUser)) return next();
+  res.status(403).json({ ok: false, error: 'このIDでは変更できません。' });
 }
 
 function escapeHtml(value) {
@@ -80,7 +172,7 @@ function validateReservation(body) {
   return { value: { name, phone, people, plan, date, message: message || null } };
 }
 
-function renderRow(r) {
+function renderRow(r, editable) {
   return `
           <tr class="${statusClass(r.status)}" data-id="${escapeHtml(r.id)}">
             <td data-label="受付日時">${escapeHtml(toJapanTime(r.created_at))}</td>
@@ -89,20 +181,22 @@ function renderRow(r) {
             <td data-label="人数">${escapeHtml(r.people)}名</td>
             <td data-label="旅行プラン">${escapeHtml(r.plan)}</td>
             <td data-label="ご希望日">${escapeHtml(toJapaneseDate(r.date))}</td>
-            <td data-label="状態" class="status-cell">
+            <td data-label="状態" class="status-cell">${editable ? `
               <select class="status-select" data-current="${escapeHtml(r.status)}" aria-label="${escapeHtml(r.name)} 様の状態">
                 ${STATUSES.includes(r.status) ? '' : `<option selected disabled>${escapeHtml(r.status || '（なし）')}</option>`}
                 ${STATUSES.map((s) => `<option value="${s}"${s === r.status ? ' selected' : ''}>${s}</option>`).join('')}
               </select>
-              <span class="status-msg" role="status"></span>
-            </td>
+              <span class="status-msg" role="status"></span>` : `
+              <span class="status-label">${escapeHtml(r.status || '（なし）')}</span>`}
+            </td>${editable ? `
             <td class="edit-cell">
               <button type="button" class="edit-btn" aria-label="${escapeHtml(r.name)} 様の予約を編集">編集</button>
-            </td>
+            </td>` : ''}
           </tr>`;
 }
 
-function renderPage(rows, errorMessage) {
+function renderPage(rows, errorMessage, userId) {
+  const editable = canEdit(userId);
   let body;
   if (errorMessage) {
     body = `<p class="notice notice-error">${escapeHtml(errorMessage)}</p>`;
@@ -121,11 +215,11 @@ function renderPage(rows, errorMessage) {
             <th>旅行プラン</th>
             <th>ご希望日</th>
             <th>状態</th>
-            <th><span class="visually-hidden">操作</span></th>
+            ${editable ? '<th><span class="visually-hidden">操作</span></th>' : ''}
           </tr>
         </thead>
         <tbody>
-          ${rows.map(renderRow).join('')}
+          ${rows.map((r) => renderRow(r, editable)).join('')}
         </tbody>
       </table>
     </div>`;
@@ -163,9 +257,17 @@ function renderPage(rows, errorMessage) {
   header {
     background: var(--blue-navy);
     color: #fff;
-    padding: 1rem 16px;
+    padding: .8rem 16px;
+    display: flex; justify-content: space-between; align-items: center; gap: .5rem 1rem; flex-wrap: wrap;
   }
   header h1 { margin: 0; font-size: 1.2rem; }
+  .login-user { display: flex; align-items: center; gap: .8rem; font-size: .9rem; }
+  .login-user strong { font-size: 1rem; }
+  .logout {
+    border: 1px solid rgba(255, 255, 255, .7); color: #fff; background: transparent;
+    border-radius: 999px; padding: .3rem .9rem; font: inherit; font-size: .85rem; cursor: pointer;
+  }
+  .logout:hover { background: rgba(255, 255, 255, .15); }
   main { max-width: 1100px; margin: 0 auto; padding: 1.5rem 16px 3rem; }
   .summary {
     display: flex; justify-content: space-between; align-items: center;
@@ -205,6 +307,13 @@ function renderPage(rows, errorMessage) {
   tr.is-cancelled td { color: #9AA8B2; }
   tr.is-cancelled td:not(.status-cell):not(.edit-cell) { text-decoration: line-through; }
   tr.is-cancelled .status-select { color: var(--text-sub); background: #F1F3F5; }
+  .status-label {
+    display: inline-block; font-size: .9rem; padding: .2rem .7rem;
+    border: 1px solid var(--line); border-radius: 999px; background: #fff;
+  }
+  tr.is-new .status-label { border-color: #FF9A44; background: #FFF4EA; }
+  tr.is-confirmed .status-label { border-color: #3A9A5B; background: #EDF8F0; }
+  tr.is-cancelled .status-label { color: var(--text-sub); background: #F1F3F5; }
 
   /* 編集画面 */
   dialog {
@@ -245,7 +354,13 @@ function renderPage(rows, errorMessage) {
 </style>
 </head>
 <body>
-<header><h1>ハッピートラベル　予約一覧</h1></header>
+<header>
+  <h1>ハッピートラベル　予約一覧</h1>
+  <form class="login-user" method="post" action="/admin/logout">
+    <span><strong>${escapeHtml(USERS[userId].label)}</strong>（${escapeHtml(userId)}）でログイン中${editable ? '' : '・見るだけ'}</span>
+    <button type="submit" class="logout">ログアウト</button>
+  </form>
+</header>
 <main>
   <div class="summary">
     <span>新しい順に表示しています。${errorMessage ? '' : `全 <strong>${rows.length}</strong> 件`}</span>
@@ -308,8 +423,17 @@ function renderPage(rows, errorMessage) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    return readResult(res, '保存できませんでした。');
+  }
+
+  // ログインが切れていたらログインページへ移る
+  async function readResult(res, fallbackError) {
     const result = await res.json().catch(() => ({}));
-    if (!res.ok || !result.ok) throw new Error(result.error || '保存できませんでした。');
+    if (res.status === 401 && result.login) {
+      alert(result.error);
+      location.href = '/admin/login';
+    }
+    if (!res.ok || !result.ok) throw new Error(result.error || fallbackError);
     return result;
   }
 
@@ -368,8 +492,7 @@ function renderPage(rows, errorMessage) {
     try {
       // 開くたびに最新の内容を読み込む
       const res = await fetch('/admin/reservations/' + encodeURIComponent(row.dataset.id));
-      const result = await res.json().catch(() => ({}));
-      if (!res.ok || !result.ok) throw new Error(result.error || '予約を読み込めませんでした。');
+      const result = await readResult(res, '予約を読み込めませんでした。');
       const r = result.reservation;
 
       editingRow = row;
@@ -428,7 +551,106 @@ function renderPage(rows, errorMessage) {
 </html>`;
 }
 
+function renderLoginPage(errorMessage, id) {
+  return `<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ログイン｜ハッピートラベル 管理</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue-navy: #0D3247;
+    --blue-mid: #1B6E96;
+    --text-main: #253746;
+    --text-sub: #4B5E6D;
+    --line: #D5E6EE;
+    --error: #B3261E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    background: #F6FAFC; color: var(--text-main);
+    font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', 'Yu Gothic', sans-serif;
+  }
+  form {
+    width: min(380px, 100%); background: #fff; border-radius: 16px; padding: 2rem 1.5rem;
+    box-shadow: 0 6px 20px rgba(22, 74, 102, 0.08);
+  }
+  h1 { margin: 0 0 1.5rem; font-size: 1.2rem; color: var(--blue-navy); text-align: center; }
+  .field { margin-bottom: 1rem; }
+  label { display: block; font-size: .85rem; color: var(--text-sub); margin-bottom: .3rem; }
+  input {
+    width: 100%; font: inherit; padding: .6rem .8rem;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--text-main);
+  }
+  input:focus { outline: 2px solid var(--blue-mid); outline-offset: 0; }
+  .form-error { color: var(--error); font-size: .9rem; margin: 0 0 1rem; }
+  button {
+    width: 100%; border: none; background: var(--blue-mid); color: #fff;
+    border-radius: 999px; padding: .7rem; font: inherit; font-weight: 700; cursor: pointer;
+  }
+  button:hover { background: var(--blue-navy); }
+</style>
+</head>
+<body>
+<form method="post" action="/admin/login">
+  <h1>ハッピートラベル 管理</h1>
+  ${errorMessage ? `<p class="form-error" role="alert">${escapeHtml(errorMessage)}</p>` : ''}
+  <div class="field">
+    <label for="id">ID</label>
+    <input type="text" id="id" name="id" value="${escapeHtml(id || '')}" autocomplete="username" autocapitalize="off" required${id ? '' : ' autofocus'}>
+  </div>
+  <div class="field">
+    <label for="password">パスワード</label>
+    <input type="password" id="password" name="password" autocomplete="current-password" required${id ? ' autofocus' : ''}>
+  </div>
+  <button type="submit">ログイン</button>
+</form>
+</body>
+</html>`;
+}
+
 function registerAdmin(app, supabase) {
+  for (const user of Object.values(USERS)) {
+    if (!process.env[user.passwordEnv]) {
+      console.warn(`.env に ${user.passwordEnv} が無いため、${user.label}のIDではログインできません。`);
+    }
+  }
+
+  app.get('/admin/login', (req, res) => {
+    if (getLoginUser(req)) return res.redirect('/admin');
+    res.set('Cache-Control', 'no-store');
+    res.send(renderLoginPage());
+  });
+
+  app.post('/admin/login', express.urlencoded({ extended: false }), (req, res) => {
+    const ip = req.ip;
+    const id = String(req.body?.id ?? '').trim();
+    const password = String(req.body?.password ?? '');
+    res.set('Cache-Control', 'no-store');
+
+    if (isLockedOut(ip)) {
+      return res.status(429).send(renderLoginPage('ログインに続けて失敗したため、しばらく受け付けません。15分ほどしてからお試しください。', id));
+    }
+    if (!checkLogin(id, password)) {
+      recordFailure(ip);
+      return res.status(401).send(renderLoginPage('IDかパスワードがちがいます。', id));
+    }
+    loginFailures.delete(ip);
+    setLoginCookie(req, res, id);
+    res.redirect(303, '/admin');
+  });
+
+  app.post('/admin/logout', (req, res) => {
+    res.clearCookie(SESSION_COOKIE, { path: '/admin' });
+    res.redirect(303, '/admin/login');
+  });
+
   app.get('/admin', requireAdmin, async (req, res) => {
     const { data, error } = await supabase
       .from('happytravel_reservations')
@@ -439,13 +661,13 @@ function registerAdmin(app, supabase) {
 
     if (error) {
       console.error('予約一覧の取得に失敗しました:', error);
-      return res.status(500).send(renderPage([], '予約の読み込みに失敗しました。時間をおいて「最新の情報にする」を押してください。'));
+      return res.status(500).send(renderPage([], '予約の読み込みに失敗しました。時間をおいて「最新の情報にする」を押してください。', req.adminUser));
     }
-    res.send(renderPage(data));
+    res.send(renderPage(data, null, req.adminUser));
   });
 
   // 編集画面を開くときに、1件分の予約内容を返す
-  app.get('/admin/reservations/:id', requireAdmin, async (req, res) => {
+  app.get('/admin/reservations/:id', requireAdmin, requireEditor, async (req, res) => {
     const { data, error } = await supabase
       .from('happytravel_reservations')
       .select(EDIT_COLUMNS)
@@ -465,7 +687,7 @@ function registerAdmin(app, supabase) {
   });
 
   // 編集画面から予約内容を更新する
-  app.post('/admin/reservations/:id', requireAdmin, async (req, res) => {
+  app.post('/admin/reservations/:id', requireAdmin, requireEditor, async (req, res) => {
     const { value, error: invalid } = validateReservation(req.body || {});
     if (invalid) {
       return res.status(400).json({ ok: false, error: invalid });
@@ -485,11 +707,11 @@ function registerAdmin(app, supabase) {
     if (!data) {
       return res.status(404).json({ ok: false, error: 'この予約が見つかりません。' });
     }
-    res.json({ ok: true, html: renderRow(data) });
+    res.json({ ok: true, html: renderRow(data, true) });
   });
 
   // 一覧のプルダウンから予約の状態を変える
-  app.post('/admin/reservations/:id/status', requireAdmin, async (req, res) => {
+  app.post('/admin/reservations/:id/status', requireAdmin, requireEditor, async (req, res) => {
     const { status } = req.body || {};
     if (!STATUSES.includes(status)) {
       return res.status(400).json({ ok: false, error: '選べない状態です。' });
@@ -509,7 +731,7 @@ function registerAdmin(app, supabase) {
     if (!data) {
       return res.status(404).json({ ok: false, error: 'この予約が見つかりません。' });
     }
-    res.json({ ok: true, status: data.status, html: renderRow(data) });
+    res.json({ ok: true, status: data.status, html: renderRow(data, true) });
   });
 }
 
