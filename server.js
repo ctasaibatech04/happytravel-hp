@@ -13,6 +13,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 app.use(express.json());
+
+// お店のトップページ（/）を開いたら public/index.html を表示する
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 「2026年9月15日」のような日本語表記の日付をDBが扱えるISO形式「2026-09-15」に変換する
