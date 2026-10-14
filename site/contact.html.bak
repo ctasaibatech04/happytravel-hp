@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ご相談・お問い合わせ｜ハッピートラベル</title>
+<meta name="description" content="ハッピートラベルへのご相談・お問い合わせ。お電話またはフォームからお気軽にどうぞ。割安航空券のご相談もこちらから。">
+<link rel="icon" href="logo_happytravel.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="index.html"><img src="logo_happytravel.svg" alt="ハッピートラベル"></a>
+    <button type="button" class="nav-toggle" aria-label="メニューを開く" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <nav class="main-nav">
+      <ul>
+        <li><a href="index.html">トップ</a></li>
+        <li><a href="tours.html">おすすめツアー</a></li>
+        <li><a href="about.html">お店について</a></li>
+        <li><a href="contact.html" class="active">ご相談・お問い合わせ</a></li>
+        <li><a href="contact.html#flight" class="nav-sub">割安航空券</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" style="min-height:34vh; background-image:url('image3.jpg');">
+  <div class="container">
+    <h1>ご相談・お問い合わせ</h1>
+    <p>お電話でも、フォームからでも大丈夫です。お気軽にご連絡ください。</p>
+  </div>
+</section>
+
+<section>
+  <div class="container contact-wrap">
+
+    <div class="fade-in">
+      <div class="phone-highlight" style="margin-bottom: var(--space-md);">
+        <div>お電話でのご相談はこちら</div>
+        <a class="tel-number" href="tel:1234567890">123-456-7890</a>
+        <div>営業時間：10:00〜19:00</div>
+      </div>
+
+      <div class="info-card">
+        <h3 style="margin-top:0; color:var(--blue-deep);">店舗情報</h3>
+        <dl>
+          <dt>電話番号</dt>
+          <dd>123-456-7890</dd>
+          <dt>営業時間</dt>
+          <dd>10:00〜19:00</dd>
+          <dt>住所</dt>
+          <dd>名古屋県東京市大阪区12-34 神戸ビル5階</dd>
+        </dl>
+      </div>
+
+      <div id="flight" class="note-box flight-card" style="margin-top: var(--space-md);">
+        <img src="image3.jpg" alt="海外旅行のイメージ（夕景の街並み）">
+        <div>
+          <strong>割安航空券をお探しの方へ</strong><br>
+          航空券のみのご相談も承っております。ご希望の行き先・時期を「相談内容」にご記入いただくか、お電話にてお気軽にお問い合わせください。
+        </div>
+      </div>
+    </div>
+
+    <div class="fade-in">
+      <div class="form-card">
+        <h3 style="margin-top:0; color:var(--blue-deep);">フォームでのご相談</h3>
+        <p style="color:var(--text-sub); margin-top:-0.5rem;">お電話番号とご相談内容をご記入ください。折り返しご連絡いたします。</p>
+
+        <form id="contact-form">
+          <label for="tel">お電話番号</label>
+          <input type="tel" id="tel" name="tel" placeholder="090-1234-5678" required>
+
+          <label for="message">相談内容</label>
+          <textarea id="message" name="message" placeholder="気になるツアー名や、ご希望の行き先・時期などをご記入ください。" required></textarea>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;">この内容で相談する</button>
+        </form>
+        <p id="form-note" style="display:none; margin-top: var(--space-sm); color: var(--blue-mid);">
+          ご記入ありがとうございます。担当より折り返しご連絡いたします。
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h5>ハッピートラベル</h5>
+        <p>安くて、いい旅を。<br>ご家族の旅も、おひとりの旅も、お気軽にご相談ください。</p>
+      </div>
+      <div>
+        <h5>ページ</h5>
+        <p>
+          <a href="index.html">トップ</a><br>
+          <a href="tours.html">おすすめツアー</a><br>
+          <a href="about.html">お店について</a><br>
+          <a href="contact.html">ご相談・お問い合わせ</a><br>
+          <a href="contact.html#flight">割安航空券</a>
+        </p>
+      </div>
+      <div>
+        <h5>ご連絡先</h5>
+        <p>
+          電話：123-456-7890<br>
+          営業時間：10:00〜19:00<br>
+          住所：名古屋県東京市大阪区12-34 神戸ビル5階
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">&copy; 2026 ハッピートラベル</div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script>
+  // URLの ?tour= からツアー名を受け取り、相談内容にあらかじめ入れておく
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var tour = params.get('tour');
+    if (tour) {
+      var textarea = document.getElementById('message');
+      textarea.value = '【' + decodeURIComponent(tour) + '】について相談したいです。\n';
+    }
+  })();
+
+  // デモ用の送信動作(実際の送信先は未設定)
+  document.getElementById('contact-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    document.getElementById('form-note').style.display = 'block';
+    // ※このフォームはまだ送信先(メール等)が設定されていません。実際の送信処理は別途実装が必要です。
+  });
+</script>
+</body>
+</html>

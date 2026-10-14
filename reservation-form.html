@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ご相談・お問い合わせ｜ハッピートラベル</title>
+<style>
+  :root{
+    --blue-deep:#2f7bb3;
+    --blue-mid:#5aa3cf;
+    --blue-pale:#eaf4fb;
+    --blue-line:#cfe4f2;
+    --navy:#1f3b4d;
+    --orange:#ef8354;
+    --orange-dark:#dd6b35;
+    --white:#ffffff;
+    --error:#c65b4a;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family: "Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+    background:var(--blue-pale);
+    color:var(--navy);
+    line-height:1.8;
+    padding:32px 16px 64px;
+  }
+  .wrap{
+    max-width:640px;
+    margin:0 auto;
+  }
+  .header{
+    text-align:center;
+    margin-bottom:32px;
+    opacity:0;
+    animation: fadeIn 0.6s ease forwards;
+  }
+  .header .badge{
+    display:inline-block;
+    background:var(--blue-deep);
+    color:#fff;
+    font-size:14px;
+    padding:4px 14px;
+    border-radius:999px;
+    margin-bottom:12px;
+    letter-spacing:0.05em;
+  }
+  .header h1{
+    font-size:28px;
+    margin:0 0 8px;
+    color:var(--navy);
+  }
+  .header p{
+    font-size:16px;
+    color:var(--blue-deep);
+    margin:0;
+  }
+  .card{
+    background:var(--white);
+    border-radius:20px;
+    padding:32px 28px;
+    box-shadow:0 8px 24px rgba(47,123,179,0.12);
+    opacity:0;
+    animation: fadeIn 0.6s ease 0.15s forwards;
+  }
+  .field{
+    margin-bottom:24px;
+  }
+  .field label{
+    display:block;
+    font-size:17px;
+    font-weight:bold;
+    margin-bottom:8px;
+    color:var(--navy);
+  }
+  .field .required{
+    color:var(--orange-dark);
+    font-size:13px;
+    font-weight:normal;
+    margin-left:6px;
+  }
+  .field input[type="text"],
+  .field input[type="tel"],
+  .field input[type="date"],
+  .field select,
+  .field textarea{
+    width:100%;
+    font-size:17px;
+    padding:14px 14px;
+    border:2px solid var(--blue-line);
+    border-radius:10px;
+    background:var(--blue-pale);
+    color:var(--navy);
+    font-family:inherit;
+    transition:border-color 0.2s ease, background 0.2s ease;
+  }
+  .field textarea{
+    min-height:110px;
+    resize:vertical;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus{
+    outline:none;
+    border-color:var(--blue-deep);
+    background:#fff;
+  }
+  .field .hint{
+    font-size:13px;
+    color:#5a7789;
+    margin-top:6px;
+  }
+  .field .error-msg{
+    font-size:14px;
+    color:var(--error);
+    margin-top:6px;
+    display:none;
+  }
+  .date-select-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+  }
+  .date-select-row select{
+    width:auto;
+    flex:1 1 90px;
+    min-width:80px;
+  }
+  .date-select-unit{
+    font-size:16px;
+    color:var(--navy);
+    margin-right:4px;
+  }
+  .field.has-error input,
+  .field.has-error select,
+  .field.has-error textarea{
+    border-color:var(--error);
+    background:#fdf1ef;
+  }
+  .field.has-error .error-msg{
+    display:block;
+  }
+  .submit-btn{
+    display:block;
+    width:100%;
+    font-size:19px;
+    font-weight:bold;
+    padding:16px;
+    border:none;
+    border-radius:12px;
+    background:var(--orange);
+    color:#fff;
+    cursor:pointer;
+    transition:transform 0.2s ease, background 0.2s ease;
+    margin-top:8px;
+  }
+  .submit-btn:hover{
+    background:var(--orange-dark);
+    transform:translateY(-2px);
+  }
+  .note{
+    text-align:center;
+    font-size:14px;
+    color:#5a7789;
+    margin-top:16px;
+  }
+
+  /* 確認画面 */
+  .result-card{
+    display:none;
+    background:var(--white);
+    border-radius:20px;
+    padding:36px 28px;
+    box-shadow:0 8px 24px rgba(47,123,179,0.12);
+    text-align:center;
+  }
+  .result-card.show{
+    display:block;
+    opacity:0;
+    animation: fadeIn 0.6s ease forwards;
+  }
+  .result-icon{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    background:var(--blue-deep);
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:28px;
+    margin:0 auto 16px;
+  }
+  .result-card h2{
+    font-size:24px;
+    color:var(--navy);
+    margin:0 0 8px;
+  }
+  .result-card .sub{
+    color:var(--blue-deep);
+    font-size:15px;
+    margin-bottom:24px;
+  }
+  .summary{
+    text-align:left;
+    background:var(--blue-pale);
+    border-radius:12px;
+    padding:20px;
+    margin-bottom:24px;
+  }
+  .summary dl{
+    margin:0;
+    display:grid;
+    grid-template-columns:120px 1fr;
+    row-gap:12px;
+    column-gap:8px;
+  }
+  .summary dt{
+    font-weight:bold;
+    color:var(--navy);
+    font-size:15px;
+  }
+  .summary dd{
+    margin:0;
+    font-size:16px;
+    color:var(--navy);
+    white-space:pre-wrap;
+  }
+  .back-btn{
+    display:inline-block;
+    font-size:16px;
+    padding:12px 28px;
+    border:2px solid var(--blue-deep);
+    border-radius:10px;
+    background:#fff;
+    color:var(--blue-deep);
+    cursor:pointer;
+    font-weight:bold;
+    transition:background 0.2s ease;
+  }
+  .back-btn:hover{
+    background:var(--blue-pale);
+  }
+
+  /* お問い合わせ案内（電話・来店） */
+  .info-card{
+    background:var(--white);
+    border-radius:20px;
+    padding:28px 28px;
+    box-shadow:0 8px 24px rgba(47,123,179,0.12);
+    margin-bottom:24px;
+    opacity:0;
+    animation: fadeIn 0.6s ease 0.05s forwards;
+  }
+  .info-card h2{
+    font-size:20px;
+    color:var(--navy);
+    margin:0 0 16px;
+  }
+  .info-row{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    margin-bottom:14px;
+  }
+  .info-row:last-child{
+    margin-bottom:0;
+  }
+  .info-icon{
+    flex:0 0 auto;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:var(--blue-pale);
+    color:var(--blue-deep);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+  }
+  .info-row .info-label{
+    font-size:14px;
+    color:#5a7789;
+    margin:0 0 2px;
+  }
+  .info-row .info-value{
+    font-size:17px;
+    color:var(--navy);
+    font-weight:bold;
+  }
+  .form-lead{
+    font-size:16px;
+    color:var(--navy);
+    margin:0 0 20px;
+    text-align:center;
+  }
+
+  /* 確認モーダル */
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(31,59,77,0.45);
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    z-index:100;
+  }
+  .modal-overlay.show{
+    display:flex;
+  }
+  .modal-card{
+    background:#fff;
+    border-radius:20px;
+    padding:32px 26px;
+    max-width:480px;
+    width:100%;
+    max-height:85vh;
+    overflow-y:auto;
+    box-shadow:0 12px 32px rgba(31,59,77,0.3);
+    opacity:0;
+    transform:translateY(8px);
+    animation: fadeIn 0.3s ease forwards;
+  }
+  .modal-card h2{
+    font-size:22px;
+    color:var(--navy);
+    margin:0 0 8px;
+    text-align:center;
+  }
+  .modal-card .sub{
+    text-align:center;
+    color:var(--blue-deep);
+    font-size:15px;
+    margin-bottom:20px;
+  }
+  .modal-btns{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:24px;
+  }
+  .modal-btn-confirm{
+    font-size:18px;
+    font-weight:bold;
+    padding:15px;
+    border:none;
+    border-radius:12px;
+    background:var(--orange);
+    color:#fff;
+    cursor:pointer;
+    transition:background 0.2s ease, transform 0.2s ease;
+  }
+  .modal-btn-confirm:hover{
+    background:var(--orange-dark);
+    transform:translateY(-2px);
+  }
+  .modal-btn-edit{
+    font-size:16px;
+    font-weight:bold;
+    padding:13px;
+    border:2px solid var(--blue-deep);
+    border-radius:12px;
+    background:#fff;
+    color:var(--blue-deep);
+    cursor:pointer;
+    transition:background 0.2s ease;
+  }
+  .modal-btn-edit:hover{
+    background:var(--blue-pale);
+  }
+
+  @keyframes fadeIn{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .header,.card,.result-card,.modal-card{
+      animation:none !important;
+      opacity:1 !important;
+      transform:none !important;
+    }
+    .submit-btn:hover{ transform:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <span class="badge">ハッピートラベル</span>
+    <h1>ご相談・お問い合わせ</h1>
+    <p>安くて、いい旅を。まずはお気軽にご相談ください。</p>
+  </div>
+
+  <div class="info-card">
+    <h2>お電話・ご来店でのご相談</h2>
+    <div class="info-row">
+      <div class="info-icon">☎</div>
+      <div>
+        <p class="info-label">お電話番号</p>
+        <p class="info-value">123-456-7890</p>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-icon">🕒</div>
+      <div>
+        <p class="info-label">営業時間</p>
+        <p class="info-value">10:00〜19:00</p>
+      </div>
+    </div>
+    <div class="info-row">
+      <div class="info-icon">📍</div>
+      <div>
+        <p class="info-label">住所</p>
+        <p class="info-value">名古屋県東京市大阪区12-34　神戸ビル5階　※住所は現在確認中です</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="form-lead">下のフォームからも、ご相談・ご予約を承っております。</p>
+
+  <form class="card" id="reserveForm" novalidate>
+
+    <div class="field" id="field-name">
+      <label for="name">お名前（苗字のみで結構です）<span class="required">必須</span></label>
+      <input type="text" id="name" name="name" placeholder="例）山田" autocomplete="family-name">
+      <p class="error-msg">お名前をご入力ください。</p>
+    </div>
+
+    <div class="field" id="field-phone">
+      <label for="phone">お電話番号<span class="required">必須</span></label>
+      <input type="tel" id="phone" name="phone" placeholder="例）090-1234-5678" autocomplete="tel">
+      <p class="error-msg">お電話番号をご入力ください。</p>
+    </div>
+
+    <div class="field" id="field-people">
+      <label for="people">ご相談人数<span class="required">必須</span></label>
+      <select id="people" name="people">
+        <option value="">選択してください</option>
+      </select>
+      <p class="error-msg">人数を選択してください。</p>
+    </div>
+
+    <div class="field" id="field-plan">
+      <label for="plan">ご相談の旅行プラン<span class="required">必須</span></label>
+      <select id="plan" name="plan">
+        <option value="">選択してください</option>
+        <option value="ご家族向けツアー">ご家族向けツアー</option>
+        <option value="ご年配向けツアー">ご年配向けツアー</option>
+        <option value="海外旅行">海外旅行</option>
+        <option value="国内旅行">国内旅行</option>
+        <option value="割安航空券">割安航空券</option>
+        <option value="その他のご相談">その他のご相談</option>
+      </select>
+      <p class="hint">※選択肢は仮のものです。実際のツアー内容が決まり次第、差し替えます。</p>
+      <p class="error-msg">プランを選択してください。</p>
+    </div>
+
+    <div class="field" id="field-date">
+      <label for="date-year">ご希望日<span class="required">必須</span></label>
+      <div class="date-select-row">
+        <select id="date-year" name="date-year" aria-label="年"></select>
+        <span class="date-select-unit">年</span>
+        <select id="date-month" name="date-month" aria-label="月"></select>
+        <span class="date-select-unit">月</span>
+        <select id="date-day" name="date-day" aria-label="日"></select>
+        <span class="date-select-unit">日</span>
+      </div>
+      <p class="error-msg">本日以降の日にちを選択してください。</p>
+    </div>
+
+    <div class="field" id="field-message">
+      <label for="message">ご相談内容（任意）</label>
+      <textarea id="message" name="message" placeholder="ご質問やご希望があればご記入ください"></textarea>
+    </div>
+
+    <button type="submit" class="submit-btn">この内容で予約する</button>
+    <p class="note">送信後、担当より折り返しご連絡いたします。</p>
+  </form>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-icon">✓</div>
+    <h2>ご予約を受け付けました</h2>
+    <p class="sub">お問い合わせいただき、ありがとうございます。担当より折り返しご連絡いたします。</p>
+    <div class="summary">
+      <dl id="summaryList"></dl>
+    </div>
+    <button type="button" class="back-btn" id="backBtn">別の予約を入力する</button>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card">
+      <h2>入力内容に間違いはありませんか？</h2>
+      <p class="sub">内容をご確認のうえ、よろしければ送信してください。</p>
+      <div class="summary">
+        <dl id="modalSummaryList"></dl>
+      </div>
+      <div class="modal-btns">
+        <button type="button" class="modal-btn-confirm" id="modalConfirmBtn">この内容で送信する</button>
+        <button type="button" class="modal-btn-edit" id="modalEditBtn">修正する</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // 人数 1〜12 のプルダウンを生成
+  var peopleSelect = document.getElementById('people');
+  for (var i = 1; i <= 12; i++){
+    var opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = i + '名';
+    peopleSelect.appendChild(opt);
+  }
+
+  // ご希望日（年・月・日）のプルダウンを生成
+  var yearSelect = document.getElementById('date-year');
+  var monthSelect = document.getElementById('date-month');
+  var daySelect = document.getElementById('date-day');
+  var today = new Date();
+  var thisYear = today.getFullYear();
+
+  var yearBlank = document.createElement('option');
+  yearBlank.value = ''; yearBlank.textContent = '年';
+  yearSelect.appendChild(yearBlank);
+  for (var y = thisYear; y <= thisYear + 2; y++){
+    var yOpt = document.createElement('option');
+    yOpt.value = y; yOpt.textContent = y;
+    yearSelect.appendChild(yOpt);
+  }
+
+  var monthBlank = document.createElement('option');
+  monthBlank.value = ''; monthBlank.textContent = '月';
+  monthSelect.appendChild(monthBlank);
+  for (var m = 1; m <= 12; m++){
+    var mOpt = document.createElement('option');
+    mOpt.value = m; mOpt.textContent = m;
+    monthSelect.appendChild(mOpt);
+  }
+
+  var dayBlank = document.createElement('option');
+  dayBlank.value = ''; dayBlank.textContent = '日';
+  daySelect.appendChild(dayBlank);
+
+  function refreshDayOptions(){
+    var keepValue = daySelect.value;
+    var y = parseInt(yearSelect.value, 10);
+    var m = parseInt(monthSelect.value, 10);
+    var daysInMonth = (y && m) ? new Date(y, m, 0).getDate() : 31;
+
+    daySelect.innerHTML = '';
+    daySelect.appendChild(dayBlank.cloneNode(true));
+    for (var d = 1; d <= daysInMonth; d++){
+      var dOpt = document.createElement('option');
+      dOpt.value = d; dOpt.textContent = d;
+      daySelect.appendChild(dOpt);
+    }
+    if (keepValue && parseInt(keepValue, 10) <= daysInMonth){
+      daySelect.value = keepValue;
+    }
+  }
+  refreshDayOptions();
+  yearSelect.addEventListener('change', refreshDayOptions);
+  monthSelect.addEventListener('change', refreshDayOptions);
+
+  var form = document.getElementById('reserveForm');
+  var resultCard = document.getElementById('resultCard');
+  var summaryList = document.getElementById('summaryList');
+  var backBtn = document.getElementById('backBtn');
+  var modalOverlay = document.getElementById('modalOverlay');
+  var modalSummaryList = document.getElementById('modalSummaryList');
+  var modalConfirmBtn = document.getElementById('modalConfirmBtn');
+  var modalEditBtn = document.getElementById('modalEditBtn');
+  var pendingRows = null;
+
+  function setError(fieldId, hasError){
+    var field = document.getElementById(fieldId);
+    if (hasError){
+      field.classList.add('has-error');
+    } else {
+      field.classList.remove('has-error');
+    }
+  }
+
+  function fillSummary(listEl, rows){
+    listEl.innerHTML = '';
+    rows.forEach(function(row){
+      var dt = document.createElement('dt');
+      dt.textContent = row[0];
+      var dd = document.createElement('dd');
+      dd.textContent = row[1];
+      listEl.appendChild(dt);
+      listEl.appendChild(dd);
+    });
+  }
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    var name = document.getElementById('name').value.trim();
+    var phone = document.getElementById('phone').value.trim();
+    var people = document.getElementById('people').value;
+    var plan = document.getElementById('plan').value;
+    var y = yearSelect.value;
+    var m = monthSelect.value;
+    var d = daySelect.value;
+    var message = document.getElementById('message').value.trim();
+
+    var valid = true;
+    setError('field-name', !name); if (!name) valid = false;
+    setError('field-phone', !phone); if (!phone) valid = false;
+    setError('field-people', !people); if (!people) valid = false;
+    setError('field-plan', !plan); if (!plan) valid = false;
+
+    var dateOk = !!(y && m && d);
+    if (dateOk){
+      var selected = new Date(parseInt(y,10), parseInt(m,10) - 1, parseInt(d,10));
+      var todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (selected < todayOnly) dateOk = false;
+    }
+    setError('field-date', !dateOk); if (!dateOk) valid = false;
+
+    if (!valid){
+      var firstError = form.querySelector('.has-error');
+      if (firstError) firstError.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+
+    pendingRows = [
+      ['お名前', name + ' 様'],
+      ['お電話番号', phone],
+      ['ご相談人数', people + '名'],
+      ['旅行プラン', plan],
+      ['ご希望日', y + '年' + m + '月' + d + '日'],
+      ['ご相談内容', message ? message : '（記入なし）']
+    ];
+
+    fillSummary(modalSummaryList, pendingRows);
+    modalOverlay.classList.add('show');
+  });
+
+  modalEditBtn.addEventListener('click', function(){
+    modalOverlay.classList.remove('show');
+  });
+
+  modalConfirmBtn.addEventListener('click', function(){
+    if (!pendingRows) return;
+    fillSummary(summaryList, pendingRows);
+    modalOverlay.classList.remove('show');
+    form.style.display = 'none';
+    resultCard.classList.add('show');
+    resultCard.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+
+  backBtn.addEventListener('click', function(){
+    form.reset();
+    document.querySelectorAll('.field.has-error').forEach(function(f){
+      f.classList.remove('has-error');
+    });
+    refreshDayOptions();
+    resultCard.classList.remove('show');
+    form.style.display = 'block';
+    form.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+})();
+</script>
+</body>
+</html>
